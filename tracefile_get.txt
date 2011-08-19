@@ -1,0 +1,53 @@
+-- fast pipelined function to read a file
+-- originally writted by dion cho, jeremy schneider added dir_name parameter
+-- http://dioncho.wordpress.com/2009/03/19/another-way-to-use-trace-file/
+
+create type varchar2_array as table of varchar2(4000);
+/
+
+create function textfile(file_name in varchar2, dir_name in varchar2 default 'UDUMP')
+return varchar2_array
+pipelined
+as
+  v_handle  utl_file.file_type;
+  v_line      varchar2(4000);
+begin
+  v_handle := utl_file.fopen(dir_name, file_name, 'R', 4000);
+  loop
+    begin
+      utl_file.get_line(v_handle, v_line);
+    exception when no_data_found then
+      exit;
+    end;
+    pipe row(v_line);
+  end loop;
+  return;
+end;
+/
+
+
+-- function to get name of current tracefile (for currently logged in session)
+-- or to get name of tracefile for another currently logged in session SID
+--
+-- this one written by jeremy schneider
+-- with ideas from René Nyffenegger
+-- http://www.adp-gmbh.ch/ora/misc/find_trace_file.html
+--
+-- you can get your current session's tracefile with this SQL:
+-- select * from table(textfile(tracefile));
+
+create function tracefile(p_sid number default userenv('sid'))
+return varchar2
+as
+  v_instance varchar2(400);
+  v_pid      varchar2(40);
+  v_trace_id varchar2(400);
+begin
+  select value into v_instance from v$parameter where name = 'instance_name';
+  select spid, nvl2(traceid, '_'||traceid, null) into v_pid, v_trace_id from v$process p, v$session s
+    where p.addr = s.paddr and s.sid = p_sid;
+  return v_instance || '_ora_' || v_pid || v_trace_id || '.trc';
+end;
+/
+
+

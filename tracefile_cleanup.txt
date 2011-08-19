@@ -1,0 +1,21 @@
+-- remove/cleanup tracefile_helper
+
+
+drop function textfile;
+drop type varchar2_array;
+
+drop function tracefile;
+
+drop function trace_file_scan;
+drop type trace_file_scan_impl;
+drop type trace_file_list;
+drop type trace_file_type;
+drop java source trace_file_helper;
+drop view all_trace_files;
+
+
+
+drop directory UDUMP;
+drop directory BDUMP;
+call dbms_java.revoke_permission('APP', 'java.io.FilePermission', '/u0001/app/oracle/admin/ardentp/udump', 'read');
+call dbms_java.revoke_permission('APP', 'java.io.FilePermission', '/u0001/app/oracle/admin/ardentp/bdump', 'read');
